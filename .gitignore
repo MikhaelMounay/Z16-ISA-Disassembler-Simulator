@@ -1,0 +1,11 @@
+
+# Build Artifacts
+cmake-build-*/
+dist/
+
+# Environments
+*.env*
+
+# User-Related Files
+*.user
+*.bak
