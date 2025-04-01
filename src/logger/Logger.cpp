@@ -33,7 +33,7 @@ void Logger::fatal(const string& msg) {
 
     cerr << msg << endl;
 
-    ofstream logFile("QuineMcCluskeySolver.log.txt");
+    ofstream logFile("Z16Simulator.log.txt");
     if (logFile.is_open()) {
         logFile << toString() << endl;
         logFile.close();
