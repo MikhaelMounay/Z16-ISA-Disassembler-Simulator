@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <vector>
 #include <string>
+#include <stdio.h>
+#include <stdint.h>
 using namespace std;
 
 #include "../logger/Logger.h"
