@@ -35,16 +35,19 @@ pub fn addMultipleIncludePaths(b: *std.Build, exe: *std.Build.Step.Compile, base
 }
 
 pub fn build(b: *std.Build) !void {
-    const targetNative = b.standardTargetOptions(.{});
+    const targetArg = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{ .preferred_optimize_mode = .ReleaseSafe });
 
     var targets = std.ArrayList(std.Target.Query).init(b.allocator);
     targets.deinit();
+
+    try targets.append(.{ .cpu_arch = .aarch64, .os_tag = .windows });
+    try targets.append(.{ .cpu_arch = .x86_64, .os_tag = .windows });
     try targets.append(.{ .cpu_arch = .aarch64, .os_tag = .macos });
+    try targets.append(.{ .cpu_arch = .x86_64, .os_tag = .macos });
     try targets.append(.{ .cpu_arch = .x86_64, .os_tag = .linux, .abi = .gnu });
     try targets.append(.{ .cpu_arch = .x86_64, .os_tag = .linux, .abi = .musl });
-    try targets.append(.{ .cpu_arch = .x86_64, .os_tag = .windows });
-    try targets.append(targetNative.query);
+    try targets.append(targetArg.query);
 
     for (targets.items) |target| {
         // Main executable
