@@ -22,46 +22,70 @@ void Executor::_setLogger(Logger* Log) {
 void Executor::disassemble(uint16_t inst, uint16_t pc) {
     uint8_t opcode = inst & 0x7;
 
-// Create a stringstream to build the disassembled instruction
- stringstream disassembledInstruction;
+    // Create a stringstream to build the disassembled instruction
+    stringstream ss;
 
     switch (opcode) {
-        case 0x0: {
+        case 0x000: {
             // R-type: [15:12] funct4 | [11:9] rs2 | [8:6] rd/rs1 | [5:3] funct3 | [2:0] opcode
             uint8_t funct4 = (inst >> 12) & 0xF;
             uint8_t rs2 = (inst >> 9) & 0x7;
             uint8_t rd_rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
 
-            if (funct4 == 0x0 && funct3 == 0x0) {
-                disassembledInstruction << "ADD " << regNames[rd_rs1] << ", " << regNames[rs2];
-            } else if (funct4 == 0x1 && funct3 == 0x0) {
-                disassembledInstruction << "SUB " << regNames[rd_rs1] << ", " << regNames[rs2];
-            } else if (funct4 == 0x0 && funct3 == 0x1) {
-                disassembledInstruction << "MUL " << regNames[rd_rs1] << ", " << regNames[rs2];
-            } else if (funct4 == 0x1 && funct3 == 0x1) {
-                disassembledInstruction << "DIV " << regNames[rd_rs1] << ", " << regNames[rs2];
+            if (funct4 == 0x0000 && funct3 == 0x000) {
+                ss << "add " << regNames[rd_rs1] << ", " << regNames[rs2];
+            } else if (funct4 == 0x0001 && funct3 == 0x000) {
+                ss << "sub " << regNames[rd_rs1] << ", " << regNames[rs2];
+            } else if (funct4 == 0x0000 && funct3 == 0x001) {
+                ss << "slt " << regNames[rd_rs1] << ", " << regNames[rs2];
+            } else if (funct4 == 0x0000 && funct3 == 0x010) {
+                ss << "sltu " << regNames[rd_rs1] << ", " << regNames[rs2];
+            } else if (funct4 == 0x0010 && funct3 == 0x011) {
+                ss << "sll " << regNames[rd_rs1] << ", " << regNames[rs2];
+            } else if (funct4 == 0x0100 && funct3 == 0x011) {
+                ss << "srl " << regNames[rd_rs1] << ", " << regNames[rs2];
+            } else if (funct4 == 0x1000 && funct3 == 0x011) {
+                ss << "sra " << regNames[rd_rs1] << ", " << regNames[rs2];
+            } else if (funct4 == 0x0001 && funct3 == 0x100) {
+                ss << "or " << regNames[rd_rs1] << ", " << regNames[rs2];
+            } else if (funct4 == 0x0000 && funct3 == 0x101) {
+                ss << "and " << regNames[rd_rs1] << ", " << regNames[rs2];
+            } else if (funct4 == 0x0000 && funct3 == 0x110) {
+                ss << "xor " << regNames[rd_rs1] << ", " << regNames[rs2];
+            } else if (funct4 == 0x0000 && funct3 == 0x111) {
+                ss << "mv " << regNames[rd_rs1] << ", " << regNames[rs2];
+            } else if (funct4 == 0x0100 && funct3 == 0x000) {
+                ss << "jr " << regNames[rs2];
+            } else if (funct4 == 0x1000 && funct3 == 0x000) {
+                ss << "jalr " << regNames[rd_rs1] << ", " << regNames[rs2];
             } else {
-                disassembledInstruction << "Unknown R-type instruction";
+                log->fatal("Unknown R-type instruction");
             }
             break;
         }
-        case 0x1: {
-       uint8_t imm7 = (inst >> 9) & 0x7F;
+        case 0x001: {
+            // I-type: [15:9] imm[6:0] | [8:6] rd/rs1 | [5:3] funct3 | [2:0] opcode
+            uint8_t imm7 = (inst >> 9) & 0x7F;
             uint8_t rd_rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
-            int16_t simm = (imm7 & 0x40) ? (imm7 | 0xFF80) : imm7; // Sign-extend immediate
+            int16_t simm = (imm7 & 0x40) ? (imm7 | 0xFF80) : imm7;
+            // Sign-extend immediate
 
             if (funct3 == 0x0) {
-                disassembledInstruction << "ADDI " << regNames[rd_rs1] << ", " << regNames[rd_rs1] << ", " << simm;
+                ss << "ADDI " << regNames[rd_rs1] << ", "
+                    << regNames[rd_rs1] << ", " << simm;
             } else if (funct3 == 0x1) {
-                disassembledInstruction << "ORI " << regNames[rd_rs1] << ", " << regNames[rd_rs1] << ", " << simm;
+                ss << "ORI " << regNames[rd_rs1] << ", " <<
+                    regNames[rd_rs1] << ", " << simm;
             } else if (funct3 == 0x2) {
-                disassembledInstruction << "ANDI " << regNames[rd_rs1] << ", " << regNames[rd_rs1] << ", " << simm;
+                ss << "ANDI " << regNames[rd_rs1] << ", "
+                    << regNames[rd_rs1] << ", " << simm;
             } else if (funct3 == 0x3) {
-                disassembledInstruction << "XORI " << regNames[rd_rs1] << ", " << regNames[rd_rs1] << ", " << simm;
+                ss << "XORI " << regNames[rd_rs1] << ", "
+                    << regNames[rd_rs1] << ", " << simm;
             } else {
-                disassembledInstruction << "Unknown I-type instruction";
+                ss << "Unknown I-type instruction";
             }
             break;
         }
@@ -73,53 +97,59 @@ void Executor::disassemble(uint16_t inst, uint16_t pc) {
             uint8_t funct3 = (inst >> 0) & 0x7;
 
             if (funct3 == 0x0) {
-                disassembledInstruction << "BEQ " << regNames[rs1] << ", " << regNames[rs2] << ", offset " << offset;
+                ss << "BEQ " << regNames[rs1] << ", " <<
+                    regNames[rs2] << ", offset " << offset;
             } else if (funct3 == 0x1) {
-                disassembledInstruction << "BNE " << regNames[rs1] << ", " << regNames[rs2] << ", offset " << offset;
+                ss << "BNE " << regNames[rs1] << ", " <<
+                    regNames[rs2] << ", offset " << offset;
             } else if (funct3 == 0x2) {
-                disassembledInstruction << "BLT " << regNames[rs1] << ", " << regNames[rs2] << ", offset " << offset;
+                ss << "BLT " << regNames[rs1] << ", " <<
+                    regNames[rs2] << ", offset " << offset;
             } else if (funct3 == 0x3) {
-                disassembledInstruction << "BGE " << regNames[rs1] << ", " << regNames[rs2] << ", offset " << offset;
+                ss << "BGE " << regNames[rs1] << ", " <<
+                    regNames[rs2] << ", offset " << offset;
             } else {
-                disassembledInstruction << "Unknown B-type instruction";
+                ss << "Unknown B-type instruction";
             }
             break;
         }
-       case 0x3: {
+        case 0x3: {
             uint8_t imm7 = (inst >> 9) & 0x7F;
             uint8_t rd = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
 
             if (funct3 == 0x0) {
-                disassembledInstruction << "LW " << regNames[rd] << ", " << imm7 << "(rs1)";
+                ss << "LW " << regNames[rd] << ", " << imm7
+                    << "(rs1)";
             } else if (funct3 == 0x1) {
-                disassembledInstruction << "SW " << regNames[rd] << ", " << imm7 << "(rs1)";
+                ss << "SW " << regNames[rd] << ", " << imm7
+                    << "(rs1)";
             } else {
-                disassembledInstruction << "Unknown L-type instruction";
+                ss << "Unknown L-type instruction";
             }
             break;
         }
         case 0x4: {
             uint16_t imm = inst & 0xFFFF;
-            disassembledInstruction << "JUMP " << "to " << imm;
+            ss << "JUMP " << "to " << imm;
             break;
         }
-        case 0x5: {    
+        case 0x5: {
             uint16_t imm = inst & 0xFFFF;
-            disassembledInstruction << "LUI " << regNames[0] << ", " << imm;
+            ss << "LUI " << regNames[0] << ", " << imm;
             break;
         }
         case 0x6: {
-            disassembledInstruction << "ECALL";
+            ss << "ECALL";
             break;
         }
         default:
-             disassembledInstruction << "Unknown instruction with opcode 0x" << std::hex << (int)opcode;
+            ss << "Unknown instruction with opcode 0x" <<
+                std::hex << (int)opcode;
             break;
     }
-    log->logMessage(disassembledInstruction.str());
+    log->logMessage(ss.str());
 }
-
 
 
 bool Executor::executeInstruction(uint16_t inst) {
