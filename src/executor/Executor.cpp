@@ -19,10 +19,10 @@ void Executor::_setLogger(Logger* Log) {
     log = Log;
 }
 
+// TODO: why do we need to pass 'pc' to the disassemble function ?!
 void Executor::disassemble(uint16_t inst, uint16_t pc) {
     uint8_t opcode = inst & 0x7;
 
-    // Create a stringstream to build the disassembled instruction
     stringstream ss;
 
     switch (opcode) {
@@ -100,66 +100,133 @@ void Executor::disassemble(uint16_t inst, uint16_t pc) {
         }
         case 0x2: {
             // B-type (branch): [15:12] offset[4:1] | [11:9] rs2 | [8:6] rs1 | [5:3] funct3 | [2:0] opcode
-            uint8_t offset = (inst >> 9) & 0xF;
-            uint8_t rs2 = (inst >> 6) & 0x7;
-            uint8_t rs1 = (inst >> 3) & 0x7;
-            uint8_t funct3 = (inst >> 0) & 0x7;
+            uint8_t offset = (inst >> 12) & 0xF;
+            uint8_t rs2 = (inst >> 9) & 0x7;
+            uint8_t rs1 = (inst >> 6) & 0x7;
+            uint8_t funct3 = (inst >> 3) & 0x7;
 
-            if (funct3 == 0x0) {
-                ss << "BEQ " << regNames[rs1] << ", " <<
-                    regNames[rs2] << ", offset " << offset;
-            } else if (funct3 == 0x1) {
-                ss << "BNE " << regNames[rs1] << ", " <<
-                    regNames[rs2] << ", offset " << offset;
-            } else if (funct3 == 0x2) {
-                ss << "BLT " << regNames[rs1] << ", " <<
-                    regNames[rs2] << ", offset " << offset;
-            } else if (funct3 == 0x3) {
-                ss << "BGE " << regNames[rs1] << ", " <<
-                    regNames[rs2] << ", offset " << offset;
+            if (funct3 == 0b000) {
+                ss << "beq " << regNames[rs1] << ", " << regNames[rs2] << ", "
+                    << offset;
+            } else if (funct3 == 0b001) {
+                ss << "bne " << regNames[rs1] << ", " << regNames[rs2] << ", "
+                    << offset;
+            } else if (funct3 == 0b010) {
+                ss << "bz " << regNames[rs1] << ", " << offset;
+            } else if (funct3 == 0b011) {
+                ss << "bnz " << regNames[rs1] << ", " << offset;
+            } else if (funct3 == 0b100) {
+                ss << "blt " << regNames[rs1] << ", " << regNames[rs2] << ", "
+                    << offset;
+            } else if (funct3 == 0b101) {
+                ss << "bge " << regNames[rs1] << ", " << regNames[rs2] << ", "
+                    << offset;
+            } else if (funct3 == 0b110) {
+                ss << "bltu " << regNames[rs1] << ", " << regNames[rs2] << ", "
+                    << offset;
+            } else if (funct3 == 0b111) {
+                ss << "bgeu " << regNames[rs1] << ", " << regNames[rs2] << ", "
+                    << offset;
             } else {
-                ss << "Unknown B-type instruction";
+                log->fatal("Unknown B-type instruction");
             }
             break;
         }
         case 0x3: {
-            uint8_t imm7 = (inst >> 9) & 0x7F;
-            uint8_t rd = (inst >> 6) & 0x7;
+            // S-Type: [15:12] offset[3:0] | [11:9] rs2 | [8:6] rs1 | [5:3] funct3 | [2:0] opcode
+            uint8_t offset = (inst >> 12) & 0xF;
+            uint8_t rs2 = (inst >> 9) & 0x7;
+            uint8_t rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
 
-            if (funct3 == 0x0) {
-                ss << "LW " << regNames[rd] << ", " << imm7
-                    << "(rs1)";
-            } else if (funct3 == 0x1) {
-                ss << "SW " << regNames[rd] << ", " << imm7
-                    << "(rs1)";
+            if (funct3 == 0b000) {
+                ss << "sb " << regNames[rs1] << ", " << offset << "(" <<
+                    regNames[rs2] << ")";
+            } else if (funct3 == 0b001) {
+                ss << "sw " << regNames[rs1] << ", " << offset << "(" <<
+                    regNames[rs2] << ")";
             } else {
-                ss << "Unknown L-type instruction";
+                log->fatal("Unknown S-type instruction");
             }
             break;
         }
         case 0x4: {
-            uint16_t imm = inst & 0xFFFF;
-            ss << "JUMP " << "to " << imm;
+            // L-Type: [15:12] offset[3:0] | [11:9] rs2 | [8:6] rd | [5:3] funct3 | [2:0] opcode
+            uint8_t offset = (inst >> 12) & 0xF;
+            uint8_t rs2 = (inst >> 9) & 0x7;
+            uint8_t rd = (inst >> 6) & 0x7;
+            uint8_t funct3 = (inst >> 3) & 0x7;
+
+            if (funct3 == 0b000) {
+                ss << "lb " << regNames[rd] << ", " << offset << "(" <<
+                    regNames[rs2] << ")";
+            } else if (funct3 == 0b001) {
+                ss << "lw " << regNames[rd] << ", " << offset << "(" <<
+                    regNames[rs2] << ")";
+            } else if (funct3 == 0b100) {
+                ss << "lbu " << regNames[rd] << ", " << offset << "(" <<
+                    regNames[rs2] << ")";
+            } else {
+                log->fatal("Unknown L-type instruction");
+            }
             break;
         }
         case 0x5: {
-            uint16_t imm = inst & 0xFFFF;
-            ss << "LUI " << regNames[0] << ", " << imm;
+            // J-Type: [15:15] f | [14:9] I[9:4] | [8:6] rd | [5:3] I[3:1] | [2:0] opcode
+            uint8_t f = (inst >> 15) & 0x1;
+            uint8_t imm6 = (inst >> 9) & 0x3F;
+            uint8_t rd = (inst >> 6) & 0x7;
+            uint8_t imm3 = (inst >> 3) & 0x7;
+
+            uint16_t imm = imm3 | (imm6 << 3);
+
+            if (f == 0b0) {
+                ss << "j " << imm;
+            } else if (f == 0b1) {
+                ss << "jal " << regNames[rd] << ", " << imm;
+            } else {
+                log->fatal("Unknown J-type instruction");
+            }
             break;
         }
         case 0x6: {
-            ss << "ECALL";
+            // U-Type: [15:15] f | [14:9] I[15:10] | [8:6] rd | [5:3] I[9:7] | [2:0] opcode
+            uint8_t f = (inst >> 15) & 0x1;
+            uint8_t imm6 = (inst >> 9) & 0x3F;
+            uint8_t rd = (inst >> 6) & 0x7;
+            uint8_t imm3 = (inst >> 3) & 0x7;
+
+            uint16_t imm = imm3 | (imm6 << 3);
+
+            if (f == 0b0) {
+                ss << "lui " << regNames[rd] << ", " << imm;
+            } else if (f == 0b1) {
+                ss << "auipc " << regNames[rd] << ", " << imm;
+            } else {
+                log->fatal("Unknown J-type instruction");
+            }
+            break;
+        }
+        case 0x7: {
+            // SYS-Type: [15:6] Service[11:0] | [5:3] funct3 | [2:0] opcode
+            uint16_t service10 = (inst >> 6) & 0x3FF;
+            uint8_t funct3 = (inst >> 3) & 0x7;
+
+            if (funct3 == 0b000) {
+                ss << "ecall " << service10;
+            } else {
+                log->fatal("Unknown SYS-type instruction");
+            }
             break;
         }
         default:
-            ss << "Unknown instruction with opcode 0x" <<
-                std::hex << (int)opcode;
+            ss << "Unknown instruction with opcode 0x" << hex <<
+                static_cast<int>(opcode);
             break;
     }
-    log->logMessage(ss.str());
-}
 
+    *log << ss.str() << endl;
+}
 
 bool Executor::executeInstruction(uint16_t inst) {
     uint8_t opcode = inst & 0x7;
