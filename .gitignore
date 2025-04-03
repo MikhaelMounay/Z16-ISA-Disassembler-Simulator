@@ -2,6 +2,8 @@
 # Build Artifacts
 cmake-build-*/
 dist/
+.zig-cache/
+zig-out/
 
 # Environments
 *.env*
