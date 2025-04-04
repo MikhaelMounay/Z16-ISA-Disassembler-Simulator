@@ -1,5 +1,6 @@
 #include "Executor.h"
 
+#include <format>
 #include <fstream>
 
 Executor::Executor() {
@@ -20,7 +21,7 @@ void Executor::_setLogger(Logger* Log) {
 }
 
 // TODO: why do we need to pass 'pc' to the disassemble function ?!
-void Executor::disassemble(uint16_t inst, uint16_t pc) {
+string Executor::disassemble(uint16_t inst, uint16_t pc) {
     uint8_t opcode = inst & 0x7;
 
     stringstream ss;
@@ -195,7 +196,7 @@ void Executor::disassemble(uint16_t inst, uint16_t pc) {
             uint8_t rd = (inst >> 6) & 0x7;
             uint8_t imm3 = (inst >> 3) & 0x7;
 
-            uint16_t imm = imm3 | (imm6 << 3);
+            int16_t imm = imm3 | (imm6 << 3);
 
             if (f == 0b0) {
                 ss << "lui " << regNames[rd] << ", " << imm;
@@ -224,7 +225,7 @@ void Executor::disassemble(uint16_t inst, uint16_t pc) {
             break;
     }
 
-    *log << ss.str() << endl;
+    return ss.str();
 }
 
 bool Executor::executeInstruction(uint16_t inst) {
@@ -293,7 +294,8 @@ bool Executor::executeInstruction(uint16_t inst) {
             } else if (funct4 == 0b1000 && funct3 == 0b000) {
                 // jalr
                 regs[1] = pc + 2;
-                pc = pc + regs[rs2];
+                // According to the ISA: All branches and jumps are PC-relative, except for JALR
+                pc = regs[rs2];
                 pcUpdated = true;
             } else {
                 log->fatal("Unknown R-type instruction");
@@ -488,13 +490,38 @@ bool Executor::executeInstruction(uint16_t inst) {
             break;
         }
         case 0x6: {
-            // U-type
-            // your code goes here
+            // U-Type: [15:15] f | [14:9] I[15:10] | [8:6] rd | [5:3] I[9:7] | [2:0] opcode
+            uint8_t f = (inst >> 15) & 0x1;
+            uint8_t imm6 = (inst >> 9) & 0x3F;
+            uint8_t rd = (inst >> 6) & 0x7;
+            uint8_t imm3 = (inst >> 3) & 0x7;
+
+            int16_t imm = imm3 | (imm6 << 3);
+
+            if (f == 0b0) {
+                // lui
+                regs[rd] = imm << (16 - 9);
+            } else if (f == 0b1) {
+                // auipc
+                regs[rd] = pc + (imm << (16 - 9));
+            } else {
+                log->fatal("Unknown J-type instruction");
+            }
             break;
         }
         case 0x7: {
-            // System instruction (ecall)
-            // your code goes here
+            // SYS-Type: [15:6] Service[11:0] | [5:3] funct3 | [2:0] opcode
+            uint16_t service10 = (inst >> 6) & 0x3FF;
+            uint8_t funct3 = (inst >> 3) & 0x7;
+
+            if (funct3 == 0b000) {
+                // TODO: what ECALLs should the program support ?!
+                if (service10 == 3) {
+                    return false;
+                }
+            } else {
+                log->fatal("Unknown SYS-type instruction");
+            }
             break;
         }
         default:
@@ -549,10 +576,12 @@ void Executor::exec() {
         */
         uint16_t inst = memory[pc] | (memory[pc + 1] << 8);
 
-        disassemble(inst, pc);
+        string disassembledInstruction = disassemble(inst, pc);
 
         // Print human-readable assembly instruction to the log
         // printf("0x%04X: %04X %s\n", pc, inst, disasmBuf); // TODO:
+        *log << format("0x{:04X}: {:04X} {}\n", pc, inst,
+                       disassembledInstruction);
 
         // Execute the instruction on registers/memory and terminate if it's 'ecall 3'
         if (!executeInstruction(inst)) {

@@ -35,7 +35,7 @@ public:
     // Decodes a 16-bit instruction 'inst' (fetched at address 'pc') and writes a human-readable
     // string to *log*. This decoder uses the opcode (bits [2:0]) to distinguish
     // among R-, I-, B-, L-, J-, U-, and System instructions.
-    void disassemble(uint16_t inst, uint16_t pc);
+    string disassemble(uint16_t inst, uint16_t pc);
 
     // -----------------------
     // Instruction Execution
