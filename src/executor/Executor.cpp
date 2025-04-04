@@ -58,8 +58,7 @@ void Executor::disassemble(uint16_t inst, uint16_t pc) {
             } else if (funct4 == 0b0100 && funct3 == 0b000) {
                 ss << "jr " << regNames[rs2];
             } else if (funct4 == 0b1000 && funct3 == 0b000) {
-                // TODO: check whether it takes only one register or two ?!
-                ss << "jalr " << regNames[rd_rs1] << ", " << regNames[rs2];
+                ss << "jalr " << regNames[rs2];
             } else {
                 log->fatal("Unknown R-type instruction");
             }
@@ -100,7 +99,7 @@ void Executor::disassemble(uint16_t inst, uint16_t pc) {
         }
         case 0x2: {
             // B-type (branch): [15:12] offset[4:1] | [11:9] rs2 | [8:6] rs1 | [5:3] funct3 | [2:0] opcode
-            uint8_t offset = (inst >> 12) & 0xF;
+            int8_t offset = (inst >> 12) & 0xF;
             uint8_t rs2 = (inst >> 9) & 0x7;
             uint8_t rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
@@ -134,7 +133,7 @@ void Executor::disassemble(uint16_t inst, uint16_t pc) {
         }
         case 0x3: {
             // S-Type: [15:12] offset[3:0] | [11:9] rs2 | [8:6] rs1 | [5:3] funct3 | [2:0] opcode
-            uint8_t offset = (inst >> 12) & 0xF;
+            int8_t offset = (inst >> 12) & 0xF;
             uint8_t rs2 = (inst >> 9) & 0x7;
             uint8_t rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
@@ -152,7 +151,7 @@ void Executor::disassemble(uint16_t inst, uint16_t pc) {
         }
         case 0x4: {
             // L-Type: [15:12] offset[3:0] | [11:9] rs2 | [8:6] rd | [5:3] funct3 | [2:0] opcode
-            uint8_t offset = (inst >> 12) & 0xF;
+            int8_t offset = (inst >> 12) & 0xF;
             uint8_t rs2 = (inst >> 9) & 0x7;
             uint8_t rd = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
@@ -178,7 +177,7 @@ void Executor::disassemble(uint16_t inst, uint16_t pc) {
             uint8_t rd = (inst >> 6) & 0x7;
             uint8_t imm3 = (inst >> 3) & 0x7;
 
-            uint16_t imm = imm3 | (imm6 << 3);
+            int16_t imm = imm3 | (imm6 << 3);
 
             if (f == 0b0) {
                 ss << "j " << imm;
@@ -289,12 +288,12 @@ bool Executor::executeInstruction(uint16_t inst) {
                 regs[rd_rs1] = regs[rs2];
             } else if (funct4 == 0b0100 && funct3 == 0b000) {
                 // jr
-                pc = regs[rd_rs1];
+                pc = pc + regs[rs2];
                 pcUpdated = true;
             } else if (funct4 == 0b1000 && funct3 == 0b000) {
                 // jalr
                 regs[1] = pc + 2;
-                pc = regs[rd_rs1];
+                pc = pc + regs[rs2];
                 pcUpdated = true;
             } else {
                 log->fatal("Unknown R-type instruction");
@@ -361,7 +360,7 @@ bool Executor::executeInstruction(uint16_t inst) {
         }
         case 0x2: {
             // B-type (branch): [15:12] offset[4:1] | [11:9] rs2 | [8:6] rs1 | [5:3] funct3 | [2:0] opcode
-            uint8_t offset = (inst >> 12) & 0xF;
+            int8_t offset = (inst >> 12) & 0xF;
             uint8_t rs2 = (inst >> 9) & 0x7;
             uint8_t rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
@@ -423,14 +422,16 @@ bool Executor::executeInstruction(uint16_t inst) {
         }
         case 0x3: {
             // S-Type: [15:12] offset[3:0] | [11:9] rs2 | [8:6] rs1 | [5:3] funct3 | [2:0] opcode
-            uint8_t offset = (inst >> 12) & 0xF;
+            int8_t offset = (inst >> 12) & 0xF;
             uint8_t rs2 = (inst >> 9) & 0x7;
             uint8_t rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
 
-            if (funct3 == 0b000) { // sb
+            if (funct3 == 0b000) {
+                // sb
                 memory[regs[rs2] + offset] = regs[rs1] & 0xFF;
-            } else if (funct3 == 0b001) { // sw
+            } else if (funct3 == 0b001) {
+                // sw
                 memory[regs[rs2] + offset] = regs[rs1];
             } else {
                 log->fatal("Unknown S-type instruction");
@@ -439,21 +440,24 @@ bool Executor::executeInstruction(uint16_t inst) {
         }
         case 0x4: {
             // L-Type: [15:12] offset[3:0] | [11:9] rs2 | [8:6] rd | [5:3] funct3 | [2:0] opcode
-            uint8_t offset = (inst >> 12) & 0xF;
+            int8_t offset = (inst >> 12) & 0xF;
             uint8_t rs2 = (inst >> 9) & 0x7;
             uint8_t rd = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
 
-            if (funct3 == 0b000) { // lb
+            if (funct3 == 0b000) {
+                // lb
                 regs[rd] = memory[regs[rs2] + offset];
                 uint8_t MSB = regs[rd] >> 7;
                 if (MSB & 0b1) {
                     regs[rd] = regs[rd] | 0xFF00;
                 }
-            } else if (funct3 == 0b001) { // lw
+            } else if (funct3 == 0b001) {
+                // lw
                 regs[rd] = memory[regs[rs2] + offset];
                 regs[rd] = (memory[regs[rs2] + offset + 1] << 8) | regs[rd];
-            } else if (funct3 == 0b100) { // lbu
+            } else if (funct3 == 0b100) {
+                // lbu
                 regs[rd] = memory[regs[rs2] + offset];
             } else {
                 log->fatal("Unknown L-type instruction");
@@ -461,8 +465,26 @@ bool Executor::executeInstruction(uint16_t inst) {
             break;
         }
         case 0x5: {
-            // J-type (jump)
-            // your code goes here
+            // J-Type: [15:15] f | [14:9] I[9:4] | [8:6] rd | [5:3] I[3:1] | [2:0] opcode
+            uint8_t f = (inst >> 15) & 0x1;
+            uint8_t imm6 = (inst >> 9) & 0x3F;
+            uint8_t rd = (inst >> 6) & 0x7;
+            uint8_t imm3 = (inst >> 3) & 0x7;
+
+            int16_t imm = imm3 | (imm6 << 3);
+
+            if (f == 0b0) {
+                // j
+                pc = pc + imm;
+                pcUpdated = true;
+            } else if (f == 0b1) {
+                // jal
+                regs[1] = pc + 2;
+                pc = pc + imm;
+                pcUpdated = true;
+            } else {
+                log->fatal("Unknown J-type instruction");
+            }
             break;
         }
         case 0x6: {
