@@ -428,9 +428,9 @@ bool Executor::executeInstruction(uint16_t inst) {
             uint8_t rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
 
-            if (funct3 == 0b000) {
+            if (funct3 == 0b000) { // sb
                 memory[regs[rs2] + offset] = regs[rs1] & 0xFF;
-            } else if (funct3 == 0b001) {
+            } else if (funct3 == 0b001) { // sw
                 memory[regs[rs2] + offset] = regs[rs1];
             } else {
                 log->fatal("Unknown S-type instruction");
@@ -438,8 +438,26 @@ bool Executor::executeInstruction(uint16_t inst) {
             break;
         }
         case 0x4: {
-            // L-type (load/store)
-            // your code goes here
+            // L-Type: [15:12] offset[3:0] | [11:9] rs2 | [8:6] rd | [5:3] funct3 | [2:0] opcode
+            uint8_t offset = (inst >> 12) & 0xF;
+            uint8_t rs2 = (inst >> 9) & 0x7;
+            uint8_t rd = (inst >> 6) & 0x7;
+            uint8_t funct3 = (inst >> 3) & 0x7;
+
+            if (funct3 == 0b000) { // lb
+                regs[rd] = memory[regs[rs2] + offset];
+                uint8_t MSB = regs[rd] >> 7;
+                if (MSB & 0b1) {
+                    regs[rd] = regs[rd] | 0xFF00;
+                }
+            } else if (funct3 == 0b001) { // lw
+                regs[rd] = memory[regs[rs2] + offset];
+                regs[rd] = (memory[regs[rs2] + offset + 1] << 8) | regs[rd];
+            } else if (funct3 == 0b100) { // lbu
+                regs[rd] = memory[regs[rs2] + offset];
+            } else {
+                log->fatal("Unknown L-type instruction");
+            }
             break;
         }
         case 0x5: {
