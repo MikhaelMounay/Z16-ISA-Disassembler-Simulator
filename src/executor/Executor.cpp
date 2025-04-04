@@ -58,6 +58,7 @@ void Executor::disassemble(uint16_t inst, uint16_t pc) {
             } else if (funct4 == 0b0100 && funct3 == 0b000) {
                 ss << "jr " << regNames[rs2];
             } else if (funct4 == 0b1000 && funct3 == 0b000) {
+                // TODO: check whether it takes only one register or two ?!
                 ss << "jalr " << regNames[rd_rs1] << ", " << regNames[rs2];
             } else {
                 log->fatal("Unknown R-type instruction");
@@ -234,19 +235,71 @@ bool Executor::executeInstruction(uint16_t inst) {
 
     switch (opcode) {
         case 0x0: {
-            // R-type
+            // R-type: [15:12] funct4 | [11:9] rs2 | [8:6] rd/rs1 | [5:3] funct3 | [2:0] opcode
             uint8_t funct4 = (inst >> 12) & 0xF;
             uint8_t rs2 = (inst >> 9) & 0x7;
             uint8_t rd_rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
-            if (funct4 == 0x0 && funct3 == 0x0) {
+
+            if (funct4 == 0b0000 && funct3 == 0b000) {
                 // add
                 regs[rd_rs1] = regs[rd_rs1] + regs[rs2];
-            } else if (funct4 == 0x1 && funct3 == 0x0) {
+            } else if (funct4 == 0b0001 && funct3 == 0b000) {
                 // sub
                 regs[rd_rs1] = regs[rd_rs1] - regs[rs2];
+            } else if (funct4 == 0b0000 && funct3 == 0b001) {
+                // slt
+                // TODO: check if we need to check the MSB and do a 2's complement in signed instructions
+                if (regs[rd_rs1] < regs[rs2]) {
+                    regs[rd_rs1] = 1;
+                } else {
+                    regs[rd_rs1] = 0;
+                }
+            } else if (funct4 == 0b0000 && funct3 == 0b010) {
+                // sltu
+                if (regs[rd_rs1] < regs[rs2]) {
+                    regs[rd_rs1] = 1;
+                } else {
+                    regs[rd_rs1] = 0;
+                }
+            } else if (funct4 == 0b0010 && funct3 == 0b011) {
+                // sll
+                regs[rd_rs1] = regs[rd_rs1] << regs[rs2];
+            } else if (funct4 == 0b0100 && funct3 == 0b011) {
+                // srl
+                regs[rd_rs1] = regs[rd_rs1] >> regs[rs2];
+            } else if (funct4 == 0b1000 && funct3 == 0b011) {
+                // sra
+                uint8_t MSB = regs[rd_rs1] >> 15;
+                regs[rd_rs1] = regs[rd_rs1] >> regs[rs2];
+                // TODO: could throw an error if the shift value is > 16
+                if (MSB & 0b1) {
+                    regs[rd_rs1] = regs[rd_rs1] | (0xFFFF << (16 - regs[rs2]));
+                }
+            } else if (funct4 == 0b0001 && funct3 == 0b100) {
+                // or
+                regs[rd_rs1] = regs[rd_rs1] | regs[rs2];
+            } else if (funct4 == 0b0000 && funct3 == 0b101) {
+                // and
+                regs[rd_rs1] = regs[rd_rs1] & regs[rs2];
+            } else if (funct4 == 0b0000 && funct3 == 0b110) {
+                // xor
+                regs[rd_rs1] = regs[rd_rs1] ^ regs[rs2];
+            } else if (funct4 == 0b0000 && funct3 == 0b111) {
+                // mv
+                regs[rd_rs1] = regs[rs2];
+            } else if (funct4 == 0b0100 && funct3 == 0b000) {
+                // jr
+                pc = regs[rd_rs1];
+                pcUpdated = true;
+            } else if (funct4 == 0b1000 && funct3 == 0b000) {
+                // jalr
+                regs[1] = pc + 2;
+                pc = regs[rd_rs1];
+                pcUpdated = true;
+            } else {
+                log->fatal("Unknown R-type instruction");
             }
-            // complete the rest
             break;
         }
         case 0x1: {
