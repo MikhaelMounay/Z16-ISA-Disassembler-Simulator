@@ -26,7 +26,7 @@ void Executor::disassemble(uint16_t inst, uint16_t pc) {
     stringstream ss;
 
     switch (opcode) {
-        case 0x000: {
+        case 0x0: {
             // R-type: [15:12] funct4 | [11:9] rs2 | [8:6] rd/rs1 | [5:3] funct3 | [2:0] opcode
             uint8_t funct4 = (inst >> 12) & 0xF;
             uint8_t rs2 = (inst >> 9) & 0x7;
@@ -65,35 +65,34 @@ void Executor::disassemble(uint16_t inst, uint16_t pc) {
             }
             break;
         }
-        case 0x001: {
+        case 0x1: {
             // I-type: [15:9] imm[6:0] | [8:6] rd/rs1 | [5:3] funct3 | [2:0] opcode
             uint8_t imm7 = (inst >> 9) & 0x7F;
             uint8_t imm3 = (inst >> 13) & 0x7;
             uint8_t rd_rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
-            // int16_t simm = (imm7 & 0x40) ? (imm7 | 0xFF80) : imm7; // TODO:
-            // Sign-extend immediate
+            int16_t simm = (imm7 & 0x40) ? (imm7 | 0xFF80) : imm7;
 
             if (funct3 == 0b000) {
-                ss << "addi " << regNames[rd_rs1] << ", " << imm7;
+                ss << "addi " << regNames[rd_rs1] << ", " << simm;
             } else if (funct3 == 0b001) {
-                ss << "slti " << regNames[rd_rs1] << ", " << imm7;
+                ss << "slti " << regNames[rd_rs1] << ", " << simm;
             } else if (funct3 == 0b010) {
                 ss << "sltui " << regNames[rd_rs1] << ", " << imm7;
             } else if (funct3 == 0b011 && imm3 == 0b001) {
-                ss << "slli " << regNames[rd_rs1] << ", " << (imm7 & 0xF);
+                ss << "slli " << regNames[rd_rs1] << ", " << (simm & 0xF);
             } else if (funct3 == 0b011 && imm3 == 0b010) {
-                ss << "srli " << regNames[rd_rs1] << ", " << (imm7 & 0xF);
+                ss << "srli " << regNames[rd_rs1] << ", " << (simm & 0xF);
             } else if (funct3 == 0b011 && imm3 == 0b100) {
-                ss << "srai " << regNames[rd_rs1] << ", " << (imm7 & 0xF);
+                ss << "srai " << regNames[rd_rs1] << ", " << (simm & 0xF);
             } else if (funct3 == 0b100) {
-                ss << "ori " << regNames[rd_rs1] << ", " << imm7;
+                ss << "ori " << regNames[rd_rs1] << ", " << simm;
             } else if (funct3 == 0b101) {
-                ss << "andi " << regNames[rd_rs1] << ", " << imm7;
+                ss << "andi " << regNames[rd_rs1] << ", " << simm;
             } else if (funct3 == 0b110) {
-                ss << "xori " << regNames[rd_rs1] << ", " << imm7;
+                ss << "xori " << regNames[rd_rs1] << ", " << simm;
             } else if (funct3 == 0b111) {
-                ss << "li " << regNames[rd_rs1] << ", " << imm7;
+                ss << "li " << regNames[rd_rs1] << ", " << simm;
             } else {
                 log->fatal("Unknown I-type instruction");
             }
@@ -303,12 +302,61 @@ bool Executor::executeInstruction(uint16_t inst) {
             break;
         }
         case 0x1: {
-            // I-type
+            // I-type: [15:9] imm[6:0] | [8:6] rd/rs1 | [5:3] funct3 | [2:0] opcode
             uint8_t imm7 = (inst >> 9) & 0x7F;
+            uint8_t imm3 = (inst >> 13) & 0x7;
             uint8_t rd_rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
             int16_t simm = (imm7 & 0x40) ? (imm7 | 0xFF80) : imm7;
-            // your code goes here
+
+            if (funct3 == 0b000) {
+                // addi
+                regs[rd_rs1] = regs[rd_rs1] + simm;
+            } else if (funct3 == 0b001) {
+                // slti
+                if (regs[rd_rs1] < simm) {
+                    regs[rd_rs1] = 1;
+                } else {
+                    regs[rd_rs1] = 0;
+                }
+            } else if (funct3 == 0b010) {
+                // sltui
+                if (regs[rd_rs1] < imm7) {
+                    regs[rd_rs1] = 1;
+                } else {
+                    regs[rd_rs1] = 0;
+                }
+            } else if (funct3 == 0b011 && imm3 == 0b001) {
+                // slli
+                // TODO: double check on that because of the 3 MSBs being reserved
+                regs[rd_rs1] = regs[rd_rs1] << (simm & 0xF);
+            } else if (funct3 == 0b011 && imm3 == 0b010) {
+                // srli
+                regs[rd_rs1] = regs[rd_rs1] >> (simm & 0xF);
+            } else if (funct3 == 0b011 && imm3 == 0b100) {
+                // srai
+                uint8_t MSB = regs[rd_rs1] >> 15;
+                regs[rd_rs1] = regs[rd_rs1] >> (simm & 0xF);
+                // TODO: could throw an error if the shift value is > 16
+                if (MSB & 0b1) {
+                    regs[rd_rs1] =
+                        regs[rd_rs1] | (0xFFFF << (16 - (simm & 0xF)));
+                }
+            } else if (funct3 == 0b100) {
+                // ori
+                regs[rd_rs1] = regs[rd_rs1] | simm;
+            } else if (funct3 == 0b101) {
+                // andi
+                regs[rd_rs1] = regs[rd_rs1] & simm;
+            } else if (funct3 == 0b110) {
+                // xori
+                regs[rd_rs1] = regs[rd_rs1] ^ simm;
+            } else if (funct3 == 0b111) {
+                // li
+                regs[rd_rs1] = simm;
+            } else {
+                log->fatal("Unknown I-type instruction");
+            }
             break;
         }
         case 0x2: {
