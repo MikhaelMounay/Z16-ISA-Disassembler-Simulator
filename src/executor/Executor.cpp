@@ -360,8 +360,65 @@ bool Executor::executeInstruction(uint16_t inst) {
             break;
         }
         case 0x2: {
-            // B-type (branch)
-            // your code goes here
+            // B-type (branch): [15:12] offset[4:1] | [11:9] rs2 | [8:6] rs1 | [5:3] funct3 | [2:0] opcode
+            uint8_t offset = (inst >> 12) & 0xF;
+            uint8_t rs2 = (inst >> 9) & 0x7;
+            uint8_t rs1 = (inst >> 6) & 0x7;
+            uint8_t funct3 = (inst >> 3) & 0x7;
+
+            if (funct3 == 0b000) {
+                // beq
+                if (regs[rs1] == regs[rs2]) {
+                    pc += offset;
+                    pcUpdated = true;
+                }
+            } else if (funct3 == 0b001) {
+                // bne
+                if (regs[rs1] != regs[rs2]) {
+                    pc += offset;
+                    pcUpdated = true;
+                }
+            } else if (funct3 == 0b010) {
+                // bz
+                if (regs[rs1] == 0) {
+                    pc += offset;
+                    pcUpdated = true;
+                }
+            } else if (funct3 == 0b011) {
+                // bnz
+                if (regs[rs1] != 0) {
+                    pc += offset;
+                    pcUpdated = true;
+                }
+            } else if (funct3 == 0b100) {
+                // blt
+                if (static_cast<int16_t>(regs[rs1]) < static_cast<int16_t>(regs[
+                        rs2])) {
+                    pc += offset;
+                    pcUpdated = true;
+                }
+            } else if (funct3 == 0b101) {
+                // bge
+                if (static_cast<int16_t>(regs[rs1]) >= static_cast<int16_t>(regs
+                        [rs2])) {
+                    pc += offset;
+                    pcUpdated = true;
+                }
+            } else if (funct3 == 0b110) {
+                // bltu
+                if (regs[rs1] < regs[rs2]) {
+                    pc += offset;
+                    pcUpdated = true;
+                }
+            } else if (funct3 == 0b111) {
+                // bgeu
+                if (regs[rs1] >= regs[rs2]) {
+                    pc += offset;
+                    pcUpdated = true;
+                }
+            } else {
+                log->fatal("Unknown B-type instruction");
+            }
             break;
         }
         case 0x3: {
