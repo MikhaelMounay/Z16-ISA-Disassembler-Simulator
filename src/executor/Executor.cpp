@@ -15,13 +15,17 @@ Executor::Executor(Logger* Log, const string& filename) {
     loadMemoryFromFile(filename);
 }
 
+// Getters
+Logger* Executor::getOutput() {
+    return &output;
+}
+
 // Methods
 void Executor::_setLogger(Logger* Log) {
     log = Log;
 }
 
-// TODO: why do we need to pass 'pc' to the disassemble function ?!
-string Executor::disassemble(uint16_t inst, uint16_t pc) {
+string Executor::disassemble(uint16_t inst) {
     uint8_t opcode = inst & 0x7;
 
     stringstream ss;
@@ -59,7 +63,7 @@ string Executor::disassemble(uint16_t inst, uint16_t pc) {
             } else if (funct4 == 0b0100 && funct3 == 0b000) {
                 ss << "jr " << regNames[rs2];
             } else if (funct4 == 0b1000 && funct3 == 0b000) {
-                ss << "jalr " << regNames[rs2];
+                ss << "jalr " << regNames[rd_rs1] << ", " << regNames[rs2];
             } else {
                 log->fatal("Unknown R-type instruction");
             }
@@ -100,33 +104,35 @@ string Executor::disassemble(uint16_t inst, uint16_t pc) {
         }
         case 0x2: {
             // B-type (branch): [15:12] offset[4:1] | [11:9] rs2 | [8:6] rs1 | [5:3] funct3 | [2:0] opcode
-            int8_t offset = (inst >> 12) & 0xF;
+            uint8_t offset = ((inst >> 12) & 0xF);
             uint8_t rs2 = (inst >> 9) & 0x7;
             uint8_t rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
+            int8_t sOffset = (offset & 0x8) ? (offset | 0xF0) : offset;
+            int16_t sOffset16 = sOffset * 2;
 
             if (funct3 == 0b000) {
                 ss << "beq " << regNames[rs1] << ", " << regNames[rs2] << ", "
-                    << offset;
+                    << static_cast<int>(sOffset16);
             } else if (funct3 == 0b001) {
                 ss << "bne " << regNames[rs1] << ", " << regNames[rs2] << ", "
-                    << offset;
+                    << static_cast<int>(sOffset16);
             } else if (funct3 == 0b010) {
-                ss << "bz " << regNames[rs1] << ", " << offset;
+                ss << "bz " << regNames[rs1] << ", " << static_cast<int>(sOffset16);
             } else if (funct3 == 0b011) {
-                ss << "bnz " << regNames[rs1] << ", " << offset;
+                ss << "bnz " << regNames[rs1] << ", " << static_cast<int>(sOffset16);
             } else if (funct3 == 0b100) {
                 ss << "blt " << regNames[rs1] << ", " << regNames[rs2] << ", "
-                    << offset;
+                    << static_cast<int>(sOffset16);
             } else if (funct3 == 0b101) {
                 ss << "bge " << regNames[rs1] << ", " << regNames[rs2] << ", "
-                    << offset;
+                    << static_cast<int>(sOffset16);
             } else if (funct3 == 0b110) {
                 ss << "bltu " << regNames[rs1] << ", " << regNames[rs2] << ", "
-                    << offset;
+                    << static_cast<int>(sOffset16);
             } else if (funct3 == 0b111) {
                 ss << "bgeu " << regNames[rs1] << ", " << regNames[rs2] << ", "
-                    << offset;
+                    << static_cast<int>(sOffset16);
             } else {
                 log->fatal("Unknown B-type instruction");
             }
@@ -138,12 +144,14 @@ string Executor::disassemble(uint16_t inst, uint16_t pc) {
             uint8_t rs2 = (inst >> 9) & 0x7;
             uint8_t rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
+            int8_t sOffset = (offset & 0x8) ? (offset | 0xF0) : offset;
+            int16_t sOffset16 = sOffset * 2;
 
             if (funct3 == 0b000) {
-                ss << "sb " << regNames[rs1] << ", " << offset << "(" <<
+                ss << "sb " << regNames[rs1] << ", " << sOffset16 << "(" <<
                     regNames[rs2] << ")";
             } else if (funct3 == 0b001) {
-                ss << "sw " << regNames[rs1] << ", " << offset << "(" <<
+                ss << "sw " << regNames[rs1] << ", " << sOffset16 << "(" <<
                     regNames[rs2] << ")";
             } else {
                 log->fatal("Unknown S-type instruction");
@@ -156,15 +164,17 @@ string Executor::disassemble(uint16_t inst, uint16_t pc) {
             uint8_t rs2 = (inst >> 9) & 0x7;
             uint8_t rd = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
+            int8_t sOffset = (offset & 0x8) ? (offset | 0xF0) : offset;
+            int16_t sOffset16 = sOffset * 2;
 
             if (funct3 == 0b000) {
-                ss << "lb " << regNames[rd] << ", " << offset << "(" <<
+                ss << "lb " << regNames[rd] << ", " << sOffset16 << "(" <<
                     regNames[rs2] << ")";
             } else if (funct3 == 0b001) {
-                ss << "lw " << regNames[rd] << ", " << offset << "(" <<
+                ss << "lw " << regNames[rd] << ", " << sOffset16 << "(" <<
                     regNames[rs2] << ")";
             } else if (funct3 == 0b100) {
-                ss << "lbu " << regNames[rd] << ", " << offset << "(" <<
+                ss << "lbu " << regNames[rd] << ", " << sOffset16 << "(" <<
                     regNames[rs2] << ")";
             } else {
                 log->fatal("Unknown L-type instruction");
@@ -178,12 +188,14 @@ string Executor::disassemble(uint16_t inst, uint16_t pc) {
             uint8_t rd = (inst >> 6) & 0x7;
             uint8_t imm3 = (inst >> 3) & 0x7;
 
-            int16_t imm = imm3 | (imm6 << 3);
+            uint16_t imm = imm3 | (imm6 << 3);
+            int16_t simm = (imm & 0x100) ? (imm | 0xFE00) : imm;
+            int16_t simm16 = simm*2;
 
             if (f == 0b0) {
-                ss << "j " << imm;
+                ss << "j " << simm16;
             } else if (f == 0b1) {
-                ss << "jal " << regNames[rd] << ", " << imm;
+                ss << "jal " << regNames[rd] << ", " << simm16;
             } else {
                 log->fatal("Unknown J-type instruction");
             }
@@ -196,12 +208,13 @@ string Executor::disassemble(uint16_t inst, uint16_t pc) {
             uint8_t rd = (inst >> 6) & 0x7;
             uint8_t imm3 = (inst >> 3) & 0x7;
 
-            int16_t imm = imm3 | (imm6 << 3);
+            uint16_t imm = imm3 | (imm6 << 3);
+            int16_t simm = (imm & 0x100) ? (imm | 0xFE00) : imm;
 
             if (f == 0b0) {
-                ss << "lui " << regNames[rd] << ", " << imm;
+                ss << "lui " << regNames[rd] << ", " << simm;
             } else if (f == 0b1) {
-                ss << "auipc " << regNames[rd] << ", " << imm;
+                ss << "auipc " << regNames[rd] << ", " << simm;
             } else {
                 log->fatal("Unknown J-type instruction");
             }
@@ -248,7 +261,6 @@ bool Executor::executeInstruction(uint16_t inst) {
                 regs[rd_rs1] = regs[rd_rs1] - regs[rs2];
             } else if (funct4 == 0b0000 && funct3 == 0b001) {
                 // slt
-                // TODO: check if we need to check the MSB and do a 2's complement in signed instructions
                 if (regs[rd_rs1] < regs[rs2]) {
                     regs[rd_rs1] = 1;
                 } else {
@@ -289,11 +301,11 @@ bool Executor::executeInstruction(uint16_t inst) {
                 regs[rd_rs1] = regs[rs2];
             } else if (funct4 == 0b0100 && funct3 == 0b000) {
                 // jr
-                pc = pc + regs[rs2];
+                pc = regs[rs2];
                 pcUpdated = true;
             } else if (funct4 == 0b1000 && funct3 == 0b000) {
                 // jalr
-                regs[1] = pc + 2;
+                regs[rd_rs1] = pc + 2;
                 // According to the ISA: All branches and jumps are PC-relative, except for JALR
                 pc = regs[rs2];
                 pcUpdated = true;
@@ -330,18 +342,23 @@ bool Executor::executeInstruction(uint16_t inst) {
             } else if (funct3 == 0b011 && imm3 == 0b001) {
                 // slli
                 // TODO: double check on that because of the 3 MSBs being reserved
-                regs[rd_rs1] = regs[rd_rs1] << (simm & 0xF);
+                simm = simm & 0xF;
+                simm = (simm & 0x8) ? (simm | 0xFFF0) : simm;
+                regs[rd_rs1] = regs[rd_rs1] << simm;
             } else if (funct3 == 0b011 && imm3 == 0b010) {
                 // srli
-                regs[rd_rs1] = regs[rd_rs1] >> (simm & 0xF);
+                simm = simm & 0xF;
+                simm = (simm & 0x8) ? (simm | 0xFFF0) : simm;
+                regs[rd_rs1] = regs[rd_rs1] >> simm;
             } else if (funct3 == 0b011 && imm3 == 0b100) {
                 // srai
+                simm = simm & 0xF;
+                simm = (simm & 0x8) ? (simm | 0xFFF0) : simm;
                 uint8_t MSB = regs[rd_rs1] >> 15;
-                regs[rd_rs1] = regs[rd_rs1] >> (simm & 0xF);
-                // TODO: could throw an error if the shift value is > 16
+                regs[rd_rs1] = regs[rd_rs1] >> simm;
                 if (MSB & 0b1) {
                     regs[rd_rs1] =
-                        regs[rd_rs1] | (0xFFFF << (16 - (simm & 0xF)));
+                        regs[rd_rs1] | (0xFFFF << (16 - simm));
                 }
             } else if (funct3 == 0b100) {
                 // ori
@@ -362,59 +379,61 @@ bool Executor::executeInstruction(uint16_t inst) {
         }
         case 0x2: {
             // B-type (branch): [15:12] offset[4:1] | [11:9] rs2 | [8:6] rs1 | [5:3] funct3 | [2:0] opcode
-            int8_t offset = (inst >> 12) & 0xF;
+            uint8_t offset = ((inst >> 12) & 0xF);
             uint8_t rs2 = (inst >> 9) & 0x7;
             uint8_t rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
+            int8_t sOffset = (offset & 0x8) ? (offset | 0xF0) : offset;
+            int16_t sOffset16 = 2 + sOffset * 2;
 
             if (funct3 == 0b000) {
                 // beq
                 if (regs[rs1] == regs[rs2]) {
-                    pc += offset;
+                    pc += sOffset16;
                     pcUpdated = true;
                 }
             } else if (funct3 == 0b001) {
                 // bne
                 if (regs[rs1] != regs[rs2]) {
-                    pc += offset;
+                    pc += sOffset16;
                     pcUpdated = true;
                 }
             } else if (funct3 == 0b010) {
                 // bz
                 if (regs[rs1] == 0) {
-                    pc += offset;
+                    pc += sOffset16;
                     pcUpdated = true;
                 }
             } else if (funct3 == 0b011) {
                 // bnz
                 if (regs[rs1] != 0) {
-                    pc += offset;
+                    pc += sOffset16;
                     pcUpdated = true;
                 }
             } else if (funct3 == 0b100) {
                 // blt
                 if (static_cast<int16_t>(regs[rs1]) < static_cast<int16_t>(regs[
                         rs2])) {
-                    pc += offset;
+                    pc += sOffset16;
                     pcUpdated = true;
                 }
             } else if (funct3 == 0b101) {
                 // bge
                 if (static_cast<int16_t>(regs[rs1]) >= static_cast<int16_t>(regs
                         [rs2])) {
-                    pc += offset;
+                    pc += sOffset16;
                     pcUpdated = true;
                 }
             } else if (funct3 == 0b110) {
                 // bltu
                 if (regs[rs1] < regs[rs2]) {
-                    pc += offset;
+                    pc += sOffset16;
                     pcUpdated = true;
                 }
             } else if (funct3 == 0b111) {
                 // bgeu
                 if (regs[rs1] >= regs[rs2]) {
-                    pc += offset;
+                    pc += sOffset16;
                     pcUpdated = true;
                 }
             } else {
@@ -428,13 +447,15 @@ bool Executor::executeInstruction(uint16_t inst) {
             uint8_t rs2 = (inst >> 9) & 0x7;
             uint8_t rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
+            int8_t sOffset = (offset & 0x8) ? (offset | 0xF0) : offset;
+            int16_t sOffset16 = sOffset * 2;
 
             if (funct3 == 0b000) {
                 // sb
-                memory[regs[rs2] + offset] = regs[rs1] & 0xFF;
+                memory[regs[rs2] + sOffset16] = regs[rs1] & 0xFF;
             } else if (funct3 == 0b001) {
                 // sw
-                memory[regs[rs2] + offset] = regs[rs1];
+                memory[regs[rs2] + sOffset16] = regs[rs1];
             } else {
                 log->fatal("Unknown S-type instruction");
             }
@@ -446,21 +467,23 @@ bool Executor::executeInstruction(uint16_t inst) {
             uint8_t rs2 = (inst >> 9) & 0x7;
             uint8_t rd = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
+            int8_t sOffset = (offset & 0x8) ? (offset | 0xF0) : offset;
+            int16_t sOffset16 = sOffset * 2;
 
             if (funct3 == 0b000) {
                 // lb
-                regs[rd] = memory[regs[rs2] + offset];
+                regs[rd] = memory[regs[rs2] + sOffset16];
                 uint8_t MSB = regs[rd] >> 7;
                 if (MSB & 0b1) {
                     regs[rd] = regs[rd] | 0xFF00;
                 }
             } else if (funct3 == 0b001) {
                 // lw
-                regs[rd] = memory[regs[rs2] + offset];
-                regs[rd] = (memory[regs[rs2] + offset + 1] << 8) | regs[rd];
+                regs[rd] = memory[regs[rs2] + sOffset16];
+                regs[rd] = (memory[regs[rs2] + sOffset16 + 1] << 8) | regs[rd];
             } else if (funct3 == 0b100) {
                 // lbu
-                regs[rd] = memory[regs[rs2] + offset];
+                regs[rd] = memory[regs[rs2] + sOffset16];
             } else {
                 log->fatal("Unknown L-type instruction");
             }
@@ -473,16 +496,18 @@ bool Executor::executeInstruction(uint16_t inst) {
             uint8_t rd = (inst >> 6) & 0x7;
             uint8_t imm3 = (inst >> 3) & 0x7;
 
-            int16_t imm = imm3 | (imm6 << 3);
+            uint16_t imm = imm3 | (imm6 << 3);
+            int16_t simm = (imm & 0x100) ? (imm | 0xFE00) : imm;
+            int16_t simm16 = simm*2;
 
             if (f == 0b0) {
                 // j
-                pc = pc + imm;
+                pc = pc + simm16;
                 pcUpdated = true;
             } else if (f == 0b1) {
                 // jal
-                regs[1] = pc + 2;
-                pc = pc + imm;
+                regs[rd] = pc + 2;
+                pc = pc + simm16;
                 pcUpdated = true;
             } else {
                 log->fatal("Unknown J-type instruction");
@@ -496,14 +521,15 @@ bool Executor::executeInstruction(uint16_t inst) {
             uint8_t rd = (inst >> 6) & 0x7;
             uint8_t imm3 = (inst >> 3) & 0x7;
 
-            int16_t imm = imm3 | (imm6 << 3);
+            uint16_t imm = imm3 | (imm6 << 3);
+            int16_t simm = (imm & 0x100) ? (imm | 0xFE00) : imm;
 
             if (f == 0b0) {
                 // lui
-                regs[rd] = imm << (16 - 9);
+                regs[rd] = simm << (16 - 9);
             } else if (f == 0b1) {
                 // auipc
-                regs[rd] = pc + (imm << (16 - 9));
+                regs[rd] = pc + (simm << (16 - 9));
             } else {
                 log->fatal("Unknown J-type instruction");
             }
@@ -516,7 +542,18 @@ bool Executor::executeInstruction(uint16_t inst) {
 
             if (funct3 == 0b000) {
                 // TODO: what ECALLs should the program support ?!
-                if (service10 == 3) {
+                if (service10 == 1) {
+                    // print integer in a0
+                    output << static_cast<int16_t>(regs[6]) << endl;
+                    // TODO: this may be considered an extra endl because it's not printed by the disassembled program
+                } else if (service10 == 5) {
+                    // print string in a0
+                    uint16_t baseAddress = regs[6];
+                    while (memory[baseAddress] != '\0') {
+                        output << memory[baseAddress] << endl;
+                        baseAddress++;
+                    }
+                } else if (service10 == 3) { // terminate
                     return false;
                 }
             } else {
@@ -576,7 +613,7 @@ void Executor::exec() {
         */
         uint16_t inst = memory[pc] | (memory[pc + 1] << 8);
 
-        string disassembledInstruction = disassemble(inst, pc);
+        string disassembledInstruction = disassemble(inst);
 
         // Print human-readable assembly instruction to the log
         // printf("0x%04X: %04X %s\n", pc, inst, disasmBuf); // TODO:

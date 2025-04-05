@@ -33,5 +33,8 @@ int main(int argc, char *argv[]) {
     Executor executor(&log, inputFilepath);
     executor.exec();
 
+    string output = executor.getOutput()->toString();
+    cout << output << endl;
+
     return 0;
 }

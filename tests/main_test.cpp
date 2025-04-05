@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
-#include <iostream>
+#include "../src/executor/Executor.h"
+
 using namespace std;
 
 TEST(MainTest, TestCase01) {

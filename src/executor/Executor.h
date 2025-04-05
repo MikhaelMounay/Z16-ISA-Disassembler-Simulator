@@ -9,8 +9,11 @@ using namespace std;
 #include "../logger/Logger.h"
 
 class Executor {
+    friend class DisassemblerTest;
+
 private:
     Logger* log;
+    Logger output;
     const int MEM_SIZE = 65536; // 2^16 Bytes = 64 KB;
 
     vector<unsigned char> memory = vector<unsigned char>(MEM_SIZE);
@@ -25,6 +28,9 @@ public:
     Executor();
     Executor(Logger* Log, const string& filename);
 
+    // Getters
+    Logger* getOutput();
+
     // Methods
     void _setLogger(Logger* Log);
 
@@ -35,7 +41,7 @@ public:
     // Decodes a 16-bit instruction 'inst' (fetched at address 'pc') and writes a human-readable
     // string to *log*. This decoder uses the opcode (bits [2:0]) to distinguish
     // among R-, I-, B-, L-, J-, U-, and System instructions.
-    string disassemble(uint16_t inst, uint16_t pc);
+    string disassemble(uint16_t inst);
 
     // -----------------------
     // Instruction Execution
