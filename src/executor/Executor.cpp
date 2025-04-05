@@ -118,9 +118,11 @@ string Executor::disassemble(uint16_t inst) {
                 ss << "bne " << regNames[rs1] << ", " << regNames[rs2] << ", "
                     << static_cast<int>(sOffset16);
             } else if (funct3 == 0b010) {
-                ss << "bz " << regNames[rs1] << ", " << static_cast<int>(sOffset16);
+                ss << "bz " << regNames[rs1] << ", " << static_cast<int>(
+                    sOffset16);
             } else if (funct3 == 0b011) {
-                ss << "bnz " << regNames[rs1] << ", " << static_cast<int>(sOffset16);
+                ss << "bnz " << regNames[rs1] << ", " << static_cast<int>(
+                    sOffset16);
             } else if (funct3 == 0b100) {
                 ss << "blt " << regNames[rs1] << ", " << regNames[rs2] << ", "
                     << static_cast<int>(sOffset16);
@@ -190,7 +192,7 @@ string Executor::disassemble(uint16_t inst) {
 
             uint16_t imm = imm3 | (imm6 << 3);
             int16_t simm = (imm & 0x100) ? (imm | 0xFE00) : imm;
-            int16_t simm16 = simm*2;
+            int16_t simm16 = simm * 2;
 
             if (f == 0b0) {
                 ss << "j " << simm16;
@@ -498,7 +500,7 @@ bool Executor::executeInstruction(uint16_t inst) {
 
             uint16_t imm = imm3 | (imm6 << 3);
             int16_t simm = (imm & 0x100) ? (imm | 0xFE00) : imm;
-            int16_t simm16 = simm*2;
+            int16_t simm16 = simm * 2;
 
             if (f == 0b0) {
                 // j
@@ -553,7 +555,8 @@ bool Executor::executeInstruction(uint16_t inst) {
                         output << memory[baseAddress] << endl;
                         baseAddress++;
                     }
-                } else if (service10 == 3) { // terminate
+                } else if (service10 == 3) {
+                    // terminate
                     return false;
                 }
             } else {
