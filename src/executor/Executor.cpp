@@ -109,7 +109,7 @@ string Executor::disassemble(uint16_t inst) {
             uint8_t rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
             int8_t sOffset = (offset & 0x8) ? (offset | 0xF0) : offset;
-            int16_t sOffset16 = sOffset * 2;
+            int16_t sOffset16 = 2 + sOffset * 2;
 
             if (funct3 == 0b000) {
                 ss << "beq " << regNames[rs1] << ", " << regNames[rs2] << ", "
@@ -119,10 +119,10 @@ string Executor::disassemble(uint16_t inst) {
                     << static_cast<int>(sOffset16);
             } else if (funct3 == 0b010) {
                 ss << "bz " << regNames[rs1] << ", " << static_cast<int>(
-                    sOffset16);
+                    sOffset16 - 2);
             } else if (funct3 == 0b011) {
                 ss << "bnz " << regNames[rs1] << ", " << static_cast<int>(
-                    sOffset16);
+                    sOffset16 - 2);
             } else if (funct3 == 0b100) {
                 ss << "blt " << regNames[rs1] << ", " << regNames[rs2] << ", "
                     << static_cast<int>(sOffset16);
@@ -386,18 +386,18 @@ bool Executor::executeInstruction(uint16_t inst) {
             uint8_t rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
             int8_t sOffset = (offset & 0x8) ? (offset | 0xF0) : offset;
-            int16_t sOffset16 = 2 + sOffset * 2;
+            int16_t sOffset16 = sOffset * 2;
 
             if (funct3 == 0b000) {
                 // beq
                 if (regs[rs1] == regs[rs2]) {
-                    pc += sOffset16;
+                    pc += 2 + sOffset16;
                     pcUpdated = true;
                 }
             } else if (funct3 == 0b001) {
                 // bne
                 if (regs[rs1] != regs[rs2]) {
-                    pc += sOffset16;
+                    pc += 2 + sOffset16;
                     pcUpdated = true;
                 }
             } else if (funct3 == 0b010) {
@@ -416,26 +416,26 @@ bool Executor::executeInstruction(uint16_t inst) {
                 // blt
                 if (static_cast<int16_t>(regs[rs1]) < static_cast<int16_t>(regs[
                         rs2])) {
-                    pc += sOffset16;
+                    pc += 2 + sOffset16;
                     pcUpdated = true;
                 }
             } else if (funct3 == 0b101) {
                 // bge
                 if (static_cast<int16_t>(regs[rs1]) >= static_cast<int16_t>(regs
                         [rs2])) {
-                    pc += sOffset16;
+                    pc += 2 + sOffset16;
                     pcUpdated = true;
                 }
             } else if (funct3 == 0b110) {
                 // bltu
                 if (regs[rs1] < regs[rs2]) {
-                    pc += sOffset16;
+                    pc += 2 + sOffset16;
                     pcUpdated = true;
                 }
             } else if (funct3 == 0b111) {
                 // bgeu
                 if (regs[rs1] >= regs[rs2]) {
-                    pc += sOffset16;
+                    pc += 2 + sOffset16;
                     pcUpdated = true;
                 }
             } else {

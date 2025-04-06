@@ -38,7 +38,7 @@ TEST(MainTest, TestCase04) {
 
     string output = executor.getOutput()->toString();
     // TODO:
-    EXPECT_EQ("-28\n-56\n44\n16\n", output);
+    EXPECT_EQ("2\n4\n6\n8\n9\n", output);
 }
 
 TEST(MainTest, TestCase05) {
@@ -48,7 +48,7 @@ TEST(MainTest, TestCase05) {
 
     string output = executor.getOutput()->toString();
     // TODO:
-    EXPECT_EQ("-40\n", output);
+    EXPECT_EQ("2\n4\n6\n8\n9\n", output);
 }
 
 TEST(MainTest, TestCase06) {

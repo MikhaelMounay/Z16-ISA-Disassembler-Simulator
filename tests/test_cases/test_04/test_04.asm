@@ -1,35 +1,55 @@
 # Test file for beq, bz, bne, and bnz instructions
+
+# the TEXT Section
     .text
-    .org 0
+    .org    0
+main:
+    # Test beq instruction
+    li a0, 6
+    li a1, 6
+    beq a0, a1, equal_branch
+    li a0, 1
+    ecall 1        # Should not be executed
 
-.main:
-li x1, 5         # Initialize x1 = 5
-li x2, 5         # Initialize x2 = 5
-li x3, 0         # Initialize x3 = 0 
-li x4, -1        # Initialize x4 = -1 
+equal_branch:
+    li a0, 2
+    ecall 1        # Should print 2
 
-beq x1, x2, label_eq   # Branch if x1 == x2
-bne x1, x3, label_ne   # Branch if x1 != x3
-bz x3, label_zero      # Branch if x3 == 0
-bnz x4, label_nonzero  # Branch if x4 != 0
+    # Test bz instruction
+    li a0, 0
+    bz a0, zero_branch
+    li a0, 3
+    ecall 1        # Should not be executed
 
-label_eq:
-    li a0, 100       # If BEQ is successful, set x5 = 100
-    ecall 1
+zero_branch:
+    li a0, 4
+    ecall 1        # Should print 4
 
-label_ne:
-    li a0, 200       # If BNE is successful, set x6 = 200
-    ecall 1
+    # Test bne instruction
+    li a0, 6
+    li a1, 7
+    bne a0, a1, not_equal_branch
+    li a0, 5
+    ecall 1        # Should not be executed
 
-label_zero:
-    li a0, 300       # If BZ is successful, set x7 = 300
-    ecall 1
+not_equal_branch:
+    li a0, 6
+    ecall 1        # Should print 6
 
-label_nonzero:
-    li a0, 400       # If BNZ is successful, set x0 = 400
-    ecall 1
+    # Test bnz instruction
+    li a0, 1
+    bnz a0, non_zero_branch
+    li a0, 7
+    ecall 1        # Should not be executed
+
+non_zero_branch:
+    li a0, 8
+    ecall 1        # Should print 8
+
 exit:
-    ecall 3               # End simulation
+    li a0, 9
+    ecall 1        # Should print 9
+    ecall 3        # Terminate the program
 
     .data
-    .org 0x100
+    .org    0x100

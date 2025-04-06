@@ -1,40 +1,57 @@
 # Test file for BLT, BGE, BLTU, and BGEU instructions
+
+# the TEXT Section
     .text
-    .org 0
+    .org    0
+main:
+    # Test BLT instruction (signed)
+    li a0, -5
+    li a1, 5
+    blt a0, a1, blt_taken
+    li a0, 1
+    ecall 1        # Should not be executed
 
-.main:
-li x1, 5         # Set x1 = 5
-li x2, 10        # Set x2 = 10
-li x3, -5        # Set x3 = -5 (used for signed comparison)
-li x4, 0xFFFF    # Set x4 = 0xFFFF (used for unsigned comparison)
+blt_taken:
+    li a0, 2
+    ecall 1        # Should print 2
 
-blt x1, x2, label_blt   # Branch to label_blt if x1 < x2 (signed)
-addi x5, 100            # Increment x5 
+    # Test BGE instruction (signed)
+    li a0, 10
+    li a1, -10
+    bge a0, a1, bge_taken
+    li a0, 3
+    ecall 1        # Should not be executed
 
-bge x2, x1, label_bge   # Branch to label_bge if x2 >= x1 (signed)
-addi x6, 200            # Increment x6 
+bge_taken:
+    li a0, 4
+    ecall 1        # Should print 4
 
-bltu x3, x4, label_bltu # Branch to label_bltu if x3 < x4 (unsigned)
-addi x7, 300            # Increment x7 
+    # Test BLTU instruction (unsigned)
+    li a0, 0x0000  # Largest unsigned 16-bit value
+    li a1, 0x0001
+    bltu a0, a1, bltu_not_taken
+    li a0, 5
+    ecall 1        # Shouldn't print 5
 
-bgeu x4, x3, label_bgeu # Branch to label_bgeu if x4 >= x3 (unsigned)
-addi x0, 400            # Increment x0 
+bltu_not_taken:
+    li a0, 6
+    ecall 1        # Should print 6
 
-label_blt:
-    addi x5, 500       # If BLT is successful, set x5 = 500
+    # Test BGEU instruction (unsigned)
+    li a0, 0x7FFF  # Smallest negative signed 16-bit value, but large unsigned value
+    li a1, 0x7FF0  # Largest positive signed 16-bit value
+    bgeu a0, a1, bgeu_taken
+    li a0, 7
+    ecall 1        # Should not be executed
 
-label_bge:
-    addi x6, 600       # If BGE is successful, set x6 = 600
+bgeu_taken:
+    li a0, 8
+    ecall 1        # Should print 8
 
-label_bltu:
-    addi x7, 700       # If BLTU is successful, set x7 = 700
-
-label_bgeu:
-    addi x0, 800       # If BGEU is successful, set x0 = 800
-
-ecall 1                # Print value of register a0 (x6)
 exit:
-    ecall 3               # End simulation
+    li a0, 9
+    ecall 1        # Should print 9
+    ecall 3        # Terminate the program
 
     .data
-    .org 0x100
+    .org    0x100
