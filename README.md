@@ -55,7 +55,7 @@ The input file should be a binary file of a `.bin` extension pre-assembled with 
    ```
 
 ## Program Design & Architecture
-Please head to the `docs` folder for more information.
+Please head to the ['docs'](docs) folder for more information.
 
 ---
 

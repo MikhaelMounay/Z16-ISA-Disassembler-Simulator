@@ -7,6 +7,12 @@
 ## [Change Log](CHANGELOG.md)
 
 ## Challenges Faced During Development
+- Some issues regarding assembling files using the Z16 custom assembler regarding the existing bugs in the version of the assembler available during the development process.
+- Correctly parsing offset/immediate values, especially 2's-complement-signed ones.
+- Correctly implementing the B-type instructions which needed thorough debugging to debug several off-by-one bugs found during testing.
+
+## Usage of AI
+- Generative AI tools have been utilized to help catching some errors and generating/validating some test cases for the program.
 
 ## Test Coverage Matrix for the Z16 ISA
 
