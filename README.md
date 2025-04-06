@@ -1,5 +1,6 @@
 # Z16 Disassembler & Simulator
 CSCE2303 Computer Organization and Assembly Language Programming (Spring 2025) - Project 1
+
 Based on [Z16 ISA Specification](https://github.com/shalan/z16)
 
 ## Overview
