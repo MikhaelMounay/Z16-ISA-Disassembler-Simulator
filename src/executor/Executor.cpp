@@ -147,14 +147,14 @@ string Executor::disassemble(uint16_t inst) {
             uint8_t rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
             int8_t sOffset = (offset & 0x8) ? (offset | 0xF0) : offset;
-            int16_t sOffset16 = sOffset * 2;
+            int16_t sOffset16 = sOffset;
 
             if (funct3 == 0b000) {
-                ss << "sb " << regNames[rs1] << ", " << sOffset16 << "(" <<
-                    regNames[rs2] << ")";
+                ss << "sb " << regNames[rs2] << ", " << sOffset16 << "(" <<
+                    regNames[rs1] << ")";
             } else if (funct3 == 0b001) {
-                ss << "sw " << regNames[rs1] << ", " << sOffset16 << "(" <<
-                    regNames[rs2] << ")";
+                ss << "sw " << regNames[rs2] << ", " << sOffset16 << "(" <<
+                    regNames[rs1] << ")";
             } else {
                 log->fatal("Unknown S-type instruction");
             }
@@ -450,14 +450,14 @@ bool Executor::executeInstruction(uint16_t inst) {
             uint8_t rs1 = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
             int8_t sOffset = (offset & 0x8) ? (offset | 0xF0) : offset;
-            int16_t sOffset16 = sOffset * 2;
+            int16_t sOffset16 = sOffset;
 
             if (funct3 == 0b000) {
                 // sb
-                memory[regs[rs2] + sOffset16] = regs[rs1] & 0xFF;
+                memory[regs[rs1] + sOffset16] = regs[rs2] & 0xFF;
             } else if (funct3 == 0b001) {
                 // sw
-                memory[regs[rs2] + sOffset16] = regs[rs1];
+                memory[regs[rs1] + sOffset16] = regs[rs2];
             } else {
                 log->fatal("Unknown S-type instruction");
             }
@@ -470,7 +470,7 @@ bool Executor::executeInstruction(uint16_t inst) {
             uint8_t rd = (inst >> 6) & 0x7;
             uint8_t funct3 = (inst >> 3) & 0x7;
             int8_t sOffset = (offset & 0x8) ? (offset | 0xF0) : offset;
-            int16_t sOffset16 = sOffset * 2;
+            int16_t sOffset16 = sOffset;
 
             if (funct3 == 0b000) {
                 // lb
@@ -552,7 +552,7 @@ bool Executor::executeInstruction(uint16_t inst) {
                     // print string in a0
                     uint16_t baseAddress = regs[6];
                     while (memory[baseAddress] != '\0') {
-                        output << memory[baseAddress] << endl;
+                        output << memory[baseAddress];
                         baseAddress++;
                     }
                 } else if (service10 == 3) {

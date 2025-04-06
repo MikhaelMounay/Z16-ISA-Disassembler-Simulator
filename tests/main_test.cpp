@@ -68,3 +68,39 @@ TEST(MainTest, TestCase07) {
     string output = executor.getOutput()->toString();
     EXPECT_EQ("70\n50\n80\n", output);
 }
+
+TEST(MainTest, TestCase08) {
+    Logger log;
+    Executor executor(&log, "../../tests/test_cases/test_08/test_08.bin");
+    executor.exec();
+
+    string output = executor.getOutput()->toString();
+    EXPECT_EQ("012", output);
+}
+
+TEST(MainTest, TestCase09) {
+    Logger log;
+    Executor executor(&log, "../../tests/test_cases/test_09/test_09.bin");
+    executor.exec();
+
+    string output = executor.getOutput()->toString();
+    EXPECT_EQ("4\nT", output);
+}
+
+TEST(MainTest, TestCase10) {
+    Logger log;
+    Executor executor(&log, "../../tests/test_cases/test_10/test_10.bin");
+    executor.exec();
+
+    string output = executor.getOutput()->toString();
+    EXPECT_EQ("0\n45\n63\n29\n29\n33\n35\n34\n", output);
+}
+
+TEST(MainTest, TestCase11) {
+    Logger log;
+    Executor executor(&log, "../../tests/test_cases/test_11/test_11.bin");
+    executor.exec();
+
+    string output = executor.getOutput()->toString();
+    EXPECT_EQ("58\n62\n51\n", output);
+}
