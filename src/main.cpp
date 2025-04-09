@@ -73,5 +73,16 @@ int main(int argc, char* argv[]) {
         outputFile.close();
     }
 
+    if (verbose) {
+        ofstream memoryDumpFile("Z16Simulator.memoryDump.txt");
+        if (!memoryDumpFile.is_open()) {
+            log.fatal("Error: Unable opening memory dump file");
+        }
+
+        memoryDumpFile << executor.getMemoryDump()->toString();
+
+        memoryDumpFile.close();
+    }
+
     return 0;
 }

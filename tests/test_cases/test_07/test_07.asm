@@ -1,19 +1,35 @@
+# the TEXT Section
     .text
-    .org 0
+    .org    0
 main:
-    li a0, 50       # a0 = 50
-    li a1, 20       # a1 = 20
 
-    add a0, a1     # a0 = a0 + a1: 50 + 20 = 70
-    ecall 1        # Print a0
+    # test j instruction
+    li a0, 1		# A sample instruction
+    j L1
+    addi a0, 2		# should not be executed
 
-    sub a0, a1     # a0 = a0 - a1: 70 - 20 = 50
-    ecall 1        # Print a0
+L1:
+    ecall 1		# should print 1
+    # test jal instruction
+    jal ra, print2
+    li a0, 3
+    ecall 1		# should print 3
+    jal ra, print4
 
-    addi a0, 30    # a0 = a0 + 30: 50 + 30 = 80
-    ecall 1        # Print a0
+exit:
+    li a0, 5
+    ecall 1		# should print 5
+    ecall 3
 
-    ecall 3        # Exit program
+print2:
+    li a0, 2
+    ecall 1		# should print 2
+    jalr t0, ra
+
+print4:
+    li a0, 4
+    ecall 1		# should print 4
+    jr ra
 
     .data
-    .org 0x100
+    .org    0x100

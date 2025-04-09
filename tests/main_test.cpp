@@ -10,7 +10,7 @@ TEST(MainTest, TestCase01) {
     executor.exec();
 
     string output = executor.getOutput()->toString();
-    EXPECT_EQ("512\n1540\n", output);
+    EXPECT_EQ("55\n", output);
 }
 
 TEST(MainTest, TestCase02) {
@@ -19,7 +19,7 @@ TEST(MainTest, TestCase02) {
     executor.exec();
 
     string output = executor.getOutput()->toString();
-    EXPECT_EQ("0\n1\n12\n8191\n-1\n", output);
+    EXPECT_EQ("21\n", output);
 }
 
 TEST(MainTest, TestCase03) {
@@ -28,7 +28,7 @@ TEST(MainTest, TestCase03) {
     executor.exec();
 
     string output = executor.getOutput()->toString();
-    EXPECT_EQ("1\n2\n3\n4\n5\n", output);
+    EXPECT_EQ("0\n", output);
 }
 
 TEST(MainTest, TestCase04) {
@@ -37,8 +37,7 @@ TEST(MainTest, TestCase04) {
     executor.exec();
 
     string output = executor.getOutput()->toString();
-    // TODO:
-    EXPECT_EQ("2\n4\n6\n8\n9\n", output);
+    EXPECT_EQ("8\n", output);
 }
 
 TEST(MainTest, TestCase05) {
@@ -47,8 +46,7 @@ TEST(MainTest, TestCase05) {
     executor.exec();
 
     string output = executor.getOutput()->toString();
-    // TODO:
-    EXPECT_EQ("2\n4\n6\n8\n9\n", output);
+    EXPECT_EQ("512\n1540\n", output);
 }
 
 TEST(MainTest, TestCase06) {
@@ -57,7 +55,7 @@ TEST(MainTest, TestCase06) {
     executor.exec();
 
     string output = executor.getOutput()->toString();
-    EXPECT_EQ("8\n32\n-4\n1\n1\n", output);
+    EXPECT_EQ("0\n1\n12\n8191\n-1\n", output);
 }
 
 TEST(MainTest, TestCase07) {
@@ -66,7 +64,7 @@ TEST(MainTest, TestCase07) {
     executor.exec();
 
     string output = executor.getOutput()->toString();
-    EXPECT_EQ("70\n50\n80\n", output);
+    EXPECT_EQ("1\n2\n3\n4\n5\n", output);
 }
 
 TEST(MainTest, TestCase08) {
@@ -75,7 +73,8 @@ TEST(MainTest, TestCase08) {
     executor.exec();
 
     string output = executor.getOutput()->toString();
-    EXPECT_EQ("012", output);
+    // TODO:
+    EXPECT_EQ("2\n4\n6\n8\n9\n", output);
 }
 
 TEST(MainTest, TestCase09) {
@@ -84,7 +83,7 @@ TEST(MainTest, TestCase09) {
     executor.exec();
 
     string output = executor.getOutput()->toString();
-    EXPECT_EQ("4\nT", output);
+    EXPECT_EQ("2\n4\n6\n8\n9\n", output);
 }
 
 TEST(MainTest, TestCase10) {
@@ -93,12 +92,48 @@ TEST(MainTest, TestCase10) {
     executor.exec();
 
     string output = executor.getOutput()->toString();
-    EXPECT_EQ("0\n45\n63\n29\n29\n33\n35\n34\n", output);
+    EXPECT_EQ("8\n32\n-4\n1\n1\n", output);
 }
 
 TEST(MainTest, TestCase11) {
     Logger log;
     Executor executor(&log, "../../tests/test_cases/test_11/test_11.bin");
+    executor.exec();
+
+    string output = executor.getOutput()->toString();
+    EXPECT_EQ("70\n50\n80\n", output);
+}
+
+TEST(MainTest, TestCase12) {
+    Logger log;
+    Executor executor(&log, "../../tests/test_cases/test_12/test_12.bin");
+    executor.exec();
+
+    string output = executor.getOutput()->toString();
+    EXPECT_EQ("012", output);
+}
+
+TEST(MainTest, TestCase13) {
+    Logger log;
+    Executor executor(&log, "../../tests/test_cases/test_13/test_13.bin");
+    executor.exec();
+
+    string output = executor.getOutput()->toString();
+    EXPECT_EQ("4\nT", output);
+}
+
+TEST(MainTest, TestCase14) {
+    Logger log;
+    Executor executor(&log, "../../tests/test_cases/test_14/test_14.bin");
+    executor.exec();
+
+    string output = executor.getOutput()->toString();
+    EXPECT_EQ("0\n45\n63\n29\n29\n33\n35\n34\n", output);
+}
+
+TEST(MainTest, TestCase15) {
+    Logger log;
+    Executor executor(&log, "../../tests/test_cases/test_15/test_15.bin");
     executor.exec();
 
     string output = executor.getOutput()->toString();

@@ -1,26 +1,55 @@
-# Test file for SB, LB, and ECALL 5 instructions
+# Test file for beq, bz, bne, and bnz instructions
+
+# the TEXT Section
     .text
-    .org 0
+    .org    0
+main:
+    # Test beq instruction
+    li a0, 6
+    li a1, 6
+    beq a0, a1, equal_branch
+    li a0, 1
+    ecall 1        # Should not be executed
 
-.main:
-li x1, 0x3F		# Set x1 = 0x3F (base address for memory operations)
-li x2, 0x30		# Set x2 = '0' (ASCII value for '0')
-li x3, 0x31		# Set x3 = '1' (ASCII value for '1')
-li x4, 0x32		# Set x4 = '2' (ASCII value for '2')
+equal_branch:
+    li a0, 2
+    ecall 1        # Should print 2
 
-sb x2, 0(x1)		# Store '0' at memory address 0x3F
-sb x3, 1(x1)		# Store '1' at memory address 0x40
-sb x4, 2(x1)		# Store '2' at memory address 0x41
+    # Test bz instruction
+    li a0, 0
+    bz a0, zero_branch
+    li a0, 3
+    ecall 1        # Should not be executed
 
-lb x5, 0(x1)		# Load byte from address 0x3F into x5 ('0')
-lb x6, 1(x1)		# Load byte from address 0x40 into x6 ('1')
-lb x7, 2(x1)		# Load byte from address 0x41 into x7 ('2')
+zero_branch:
+    li a0, 4
+    ecall 1        # Should print 4
 
-li x6, 0x3F		# Set a0 (x6) to the base address of the string
-ecall 5			# Print the string
+    # Test bne instruction
+    li a0, 6
+    li a1, 7
+    bne a0, a1, not_equal_branch
+    li a0, 5
+    ecall 1        # Should not be executed
+
+not_equal_branch:
+    li a0, 6
+    ecall 1        # Should print 6
+
+    # Test bnz instruction
+    li a0, 1
+    bnz a0, non_zero_branch
+    li a0, 7
+    ecall 1        # Should not be executed
+
+non_zero_branch:
+    li a0, 8
+    ecall 1        # Should print 8
 
 exit:
-    ecall 3		# End simulation
+    li a0, 9
+    ecall 1        # Should print 9
+    ecall 3        # Terminate the program
 
     .data
-    .org 0x100
+    .org    0x100

@@ -2,6 +2,7 @@
 
 #include <format>
 #include <fstream>
+#include <iomanip>
 
 Executor::Executor() {
     log = new Logger{};
@@ -18,6 +19,10 @@ Executor::Executor(Logger* Log, const string& filename) {
 // Getters
 Logger* Executor::getOutput() {
     return &output;
+}
+
+Logger* Executor::getMemoryDump() {
+    return &memoryDump;
 }
 
 // Methods
@@ -619,8 +624,7 @@ void Executor::exec() {
         string disassembledInstruction = disassemble(inst);
 
         // Print human-readable assembly instruction to the log
-        // printf("0x%04X: %04X %s\n", pc, inst, disasmBuf); // TODO:
-        *log << format("0x{:04X}: {:04X} {}\n", pc, inst,
+        *log << setw(30) << left << format("0x{:04X}: {:04X} {}", pc, inst,
                        disassembledInstruction);
 
         // Execute the instruction on registers/memory and terminate if it's 'ecall 3'
@@ -628,9 +632,37 @@ void Executor::exec() {
             break;
         }
 
+        // Print the reg file after each execution next to the disassembled instruction
+        *log << " |  Reg File: [ ";
+        for (int i = 0; i < regs.size(); i++) {
+            *log << regs[i];
+            if (i != regs.size() - 1) {
+                *log << ", ";
+            }
+        }
+        *log << " ]\n";
+
         // Terminate if PC goes out of bounds
         if (pc >= MEM_SIZE) {
             break;
         }
     }
+
+    // Print the reg file after each execution next to the disassembled instruction
+    *log << " |  Reg File: [ ";
+    for (int i = 0; i < regs.size(); i++) {
+        *log << regs[i];
+        if (i != regs.size() - 1) {
+            *log << ", ";
+        }
+    }
+    *log << " ]\n";
+
+    // Dump the memory content after terminating execution
+    memoryDump << "Final memory state after execution:\n";
+    for (size_t i = 0; i < MEM_SIZE; i++) {
+        memoryDump << setw(15) << left << format("0x{:04X}: ", i) << left << static_cast<int>(memory[i]) << endl;
+    }
+
+    *log << "Memory content has been dumped into ./Z16Simulator.memoryDump.txt\n";
 }

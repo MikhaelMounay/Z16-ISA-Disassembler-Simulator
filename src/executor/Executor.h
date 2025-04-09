@@ -14,6 +14,7 @@ class Executor {
 private:
     Logger* log;
     Logger output;
+    Logger memoryDump;
     const int MEM_SIZE = 65536; // 2^16 Bytes = 64 KB;
 
     vector<unsigned char> memory = vector<unsigned char>(MEM_SIZE);
@@ -30,6 +31,7 @@ public:
 
     // Getters
     Logger* getOutput();
+    Logger* getMemoryDump();
 
     // Methods
     void _setLogger(Logger* Log);
